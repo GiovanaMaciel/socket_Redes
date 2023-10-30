@@ -26,18 +26,25 @@ client.connect(server_port, server_host, function () {
         rl.question(
           "Digite o nome do arquivo a ser enviado: ",
           function (file_name) {
-            client.write("1");
-            client.write(file_name);
-            const fileStream = fs.createReadStream(client_data_dir + file_name);
-            fileStream.on("data", function (data) {
-              client.write(data);
-            });
-            fileStream.on("end", function () {
-              client.end();
-              console.log("Arquivo enviado.");
-              console.log("Conexão encerrada.");
+            if (fs.existsSync(client_data_dir + file_name)) {
+              client.write("1");
+              client.write(file_name);
+              const fileStream = fs.createReadStream(
+                client_data_dir + file_name
+              );
+              fileStream.on("data", function (data) {
+                client.write(data);
+              });
+              fileStream.on("end", function () {
+                client.end();
+                console.log("Arquivo enviado.");
+                console.log("Conexão encerrada.");
+                process.exit(0);
+              });
+            } else {
+              console.log("Arquivo não encontrado.");
               process.exit(0);
-            });
+            }
           }
         );
       } else if (option === "2") {
@@ -46,16 +53,23 @@ client.connect(server_port, server_host, function () {
           function (file_name) {
             client.write("2");
             client.write(file_name);
+
+            let fileNotFound = false; // Variável de controle
+
             client.on("data", function (data) {
               if (data.toString() === "Arquivo não encontrado.") {
-                console.log("Arquivo não encontrado.");
+                fileNotFound = true; // Define a variável de controle como verdadeira
               } else {
                 fs.appendFileSync(client_data_dir + file_name, data);
               }
             });
 
             client.on("end", function () {
-              console.log("Arquivo recebido e salvo.");
+              if (fileNotFound) {
+                console.log("Arquivo não encontrado.");
+              } else {
+                console.log("Arquivo recebido e salvo.");
+              }
               process.exit(0);
             });
           }
@@ -72,9 +86,4 @@ client.connect(server_port, server_host, function () {
   }
 
   menu();
-});
-
-client.on("close", function () {
-  console.log("Conexão encerrada.");
-  process.exit(0);
 });

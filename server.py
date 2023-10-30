@@ -29,11 +29,14 @@ def handle_client(client_socket):
             file_name = client_socket.recv(1024).decode()
             file_path = server_data_dir + file_name
             try:
-                with open(file_path, "rb") as file:
-                    data = file.read(1024)
-                    while data:
-                        client_socket.send(data)
+                if os.path.exists(file_path):
+                    with open(file_path, "rb") as file:
                         data = file.read(1024)
+                        while data:
+                            client_socket.send(data)
+                            data = file.read(1024)
+                else:
+                    client_socket.send("Arquivo não encontrado.".encode())
             except FileNotFoundError:
                 client_socket.send("Arquivo não encontrado.".encode())
 
